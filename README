@@ -1,2 +1,4 @@
 unfinished web server for Rust, but lot
 of functionality is there
+this is exclusivelly for Linux.
+You'll need fasm as well.
