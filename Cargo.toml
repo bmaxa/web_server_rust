@@ -1,0 +1,27 @@
+[package]
+name = "web_server"
+version = "1.0.0"
+authors = ["Branimir Maksimovic <branimir.maksimovic@gmail.com>"]
+build = "build.rs"
+edition = "2018"
+[[bin]]
+name = "cgi_server"
+path = "src/cgi_server.rs"
+[[bin]]
+name = "web_server"
+path = "src/main.rs"
+[[bin]]
+name = "sockclient"
+path = "src/sockclient.rs"
+[features]
+default = []
+service = []
+[dependencies]
+#rust-crypto = "*"
+downcast-rs = "*"
+text_io = "*"
+
+[profile.release]
+opt-level = 3
+#lto = true
+#target-cpu = haswell
