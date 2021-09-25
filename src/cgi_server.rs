@@ -1,5 +1,3 @@
-#![feature(link_args)]
-#![link_args= "-latomic"]
 use std::io::stderr;
 use std::io::Write;
 
