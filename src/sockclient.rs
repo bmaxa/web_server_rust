@@ -11,9 +11,10 @@ use std::sync::Arc;
 use std::cell::RefCell;
 type PtrCount = Arc<RefCell<i32>>;
 type PtrClosed = Arc<RefCell<i32>>;
+type PtrErrors = Arc<RefCell<i32>>;
 
 #[derive(Clone)]
-struct Hello(String,Instant,PtrCount,PtrClosed);
+struct Hello(String,Instant,PtrCount,PtrClosed,PtrErrors);
 
 impl SocketInterface for Hello{
     fn clone(&self)->Box<SocketInterface>
@@ -28,11 +29,11 @@ impl SocketInterface for Hello{
     }
     fn done_reading(&mut self,s:PtrSocket,p:&mut EPoll)->Result<Option<PtrSocket>,String>
     {
-        unsafe { 
+        unsafe {
             let s = s.socket();
-            self.0.push_str(std::str::from_utf8_unchecked(&s.rd_buf[0..s.rd_buf_pos])); 
+            self.0.push_str(std::str::from_utf8_unchecked(&s.rd_buf[0..s.rd_buf_pos]));
         }
-        
+
         if self.0 != "Close".to_string() { let _ = p.read(s,1024); }
         Ok(None)
     }
@@ -55,11 +56,12 @@ impl SocketInterface for Hello{
     fn handle_error(&mut self,_:PtrSocket,_:&mut EPoll,e:String)->Result<Option<PtrSocket>,String>
     {
         println!("{}",e);
+        *self.4.borrow_mut() += 1;
         Ok(None)
     }
     fn tick(&mut self)->bool {
         *self.2.borrow_mut() += 1;
-        if self.1.elapsed().as_secs() > 1 { 
+        if self.1.elapsed().as_secs() > 10 {
             self.0 = "Close".to_string();
             *self.3.borrow_mut() += 1;
             return  true }
@@ -99,6 +101,7 @@ fn main()
     let start = Instant::now();
     let var = Arc::new(RefCell::new(0));
     let var1 = Arc::new(RefCell::new(0));
+    let var2 = Arc::new(RefCell::new(0));
     loop {
         let k = i as u32;
         let con = if c > k { k } else { c };
@@ -108,7 +111,8 @@ fn main()
                     ESocket::new_impl(Box::new(Hello("".to_string(),
                     Instant::now(),
                     var.clone(),
-                    var1.clone())))));
+                    var1.clone(),
+                    var2.clone())))));
             match epoll.connect(s,&addr) {
                 Err(s) => panic!(s),
                 _ => { i-= 1; }
@@ -123,5 +127,6 @@ fn main()
     let diff = (end.as_secs()*1000000000+end.subsec_nanos()as u64) as f64;
     let rs = (n/(diff/1000000000.0)) as u32;
     println!("{}",rs.to_string()+" recs/sec");
+    println!("Errors {}",*var2.borrow());
     println!("Timeouted {} \n",*var1.borrow());
 }
